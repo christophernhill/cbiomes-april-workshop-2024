@@ -1,0 +1,55 @@
+#
+# We use a micromamba local isntall to keep things tidy and in an isolated directory
+# Docs for this are here https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html
+#
+# The docs include details for Windows setups, which we haven't had a chance to try.
+
+
+# Start in some directory just for this
+# then....
+
+
+#
+# For Arm Mac
+# curl -Ls https://micro.mamba.pm/api/micromamba/osx-arm64/latest | tar -xvj bin/micromamba
+# For Arm Linux
+# curl -Ls https://micro.mamba.pm/api/micromamba/linux-aarch64/latest | tar -xvj bin/micromamba
+# For Intel Mac
+# curl -Ls https://micro.mamba.pm/api/micromamba/osx-64/latest | tar -xvj bin/micromamba
+# For Intel Linux
+curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj bin/micromamba
+
+
+mkdir mmb
+export MAMBA_ROOT_PREFIX=`pwd`/mmb
+eval "$(./bin/micromamba shell hook -s posix)"
+micromamba activate
+micromamba install -y python=3.11 jupyterlab gfortran make m4 git netcdf4 netcdf-fortran matplotlib -c conda-forge
+python3 -m pip install cogapp
+
+git clone https://github.com/darwinproject/darwin3
+cd darwin3
+git checkout 874ca3e6c1129f53f75da3c847b357c7874dfd42
+curl https://svante.mit.edu/~stephdut/DARWIN3_ONED_EXAMPLES/dar8.tar > dar8.tar
+tar -xvf dar8.tar
+cd dar8
+mkdir -p run build
+cd build
+export FC=
+../../tools/genmake2  --mods=../code_6+4+0_RT_1D
+make depend
+make small_f
+make -j
+cd ../run
+ln -s ../input_6+4+0_RT_1D_HOT/* .
+../build/mitgcmuv > out
+
+# Once run is complete and from the run directory, with micromamba environment still set
+cd `ls -altrd diags_* | tail -1 | awk '{print $9}'`
+
+
+## Single core timing for 30 years on lightsail - Intel Xeon Platinum 8275CL CPU @ 3.00GHz 
+## 36 mins
+
+## Single core timing for 30 years on M3 Max laptop
+## 17 mins
